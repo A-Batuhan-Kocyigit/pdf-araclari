@@ -1,0 +1,23 @@
+{
+  "name": "pdf_araclari_web",
+  "version": "1.0.0",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "description": "",
+  "dependencies": {
+    "@capacitor/android": "^7.6.9",
+    "@capacitor/cli": "^7.6.9",
+    "@capacitor/core": "^7.6.9",
+    "@capacitor/filesystem": "^7.1.9",
+    "@capacitor/share": "^7.0.4",
+    "@pdf-lib/fontkit": "^1.1.1",
+    "dejavu-fonts-ttf": "^2.37.3",
+    "pdf-lib": "^1.17.1",
+    "pdfjs-dist": "^4.10.38"
+  }
+}

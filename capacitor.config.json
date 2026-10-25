@@ -1,0 +1,8 @@
+{
+  "appId": "com.ayhanbatuhan.pdfaraclari",
+  "appName": "PDF Araçları",
+  "webDir": "www",
+  "android": {
+    "backgroundColor": "#222222"
+  }
+}

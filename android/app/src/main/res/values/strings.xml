@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">PDF Araçları</string>
+    <string name="title_activity_main">PDF Araçları</string>
+    <string name="package_name">com.ayhanbatuhan.pdfaraclari</string>
+    <string name="custom_url_scheme">com.ayhanbatuhan.pdfaraclari</string>
+</resources>
