@@ -1,0 +1,197 @@
+<!doctype html>
+<html lang="tr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>PDF Araçları</title>
+  <meta name="description" content="PDF defter oluşturucu ve kitapçık düzenleyici — dosyalar cihazınızdan çıkmaz.">
+  <meta name="theme-color" content="#303030">
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="icon" href="icons/icon-192.png">
+  <link rel="apple-touch-icon" href="icons/icon-192.png">
+  <link rel="stylesheet" href="css/app.css">
+  <script src="vendor/pdf-lib.min.js"></script>
+  <script src="vendor/fontkit.umd.min.js"></script>
+  <script type="module" src="js/app.js"></script>
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand"><span class="logo">◈</span> PDF ARAÇLARI <small>Defter + Kitapçık</small></div>
+    <label class="theme-pick">Tema <select id="theme" aria-label="Tema"></select></label>
+  </header>
+
+  <nav class="tabs" role="tablist">
+    <button role="tab" data-tab="defter">📓 Defter Oluştur</button>
+    <button role="tab" data-tab="kitapcik">📖 Kitapçık Düzenle</button>
+  </nav>
+
+  <main class="layout">
+    <div class="col-main">
+
+      <!-- ── Defter sekmesi ───────────────────────────── -->
+      <section class="tab" id="tab-defter">
+        <div class="card">
+          <h2>📄 Ana PDF Dosyaları</h2>
+          <div class="dropzone">
+            <label class="btn primary"><input type="file" accept="application/pdf,.pdf" multiple hidden data-pick="defter">＋ PDF Seç</label>
+            <span class="muted">veya dosyaları buraya sürükleyin</span>
+          </div>
+          <ul class="filelist" data-list="defter"></ul>
+        </div>
+
+        <div class="card">
+          <h2>🗒 Eklenecek Sayfa Türü</h2>
+          <div class="seg" data-key="h_kind" id="kindSeg"></div>
+          <div class="row" id="customRow" hidden>
+            <label class="btn"><input type="file" accept="application/pdf,.pdf" hidden id="h_file">Özel PDF seç</label>
+            <span class="muted" id="h_file_name">Seçilmedi (ilk sayfası kullanılır)</span>
+          </div>
+        </div>
+
+        <details class="card" id="patternCard" open>
+          <summary>📐 Desen Ayarları <span class="muted">(otomatik üretilen sayfalar)</span></summary>
+          <div class="grid2">
+            <label>Aralık (mm)<input type="number" id="h_spacing" min="2" max="30" step="0.5" inputmode="decimal"></label>
+            <label>Kenar (mm)<input type="number" data-key="h_margin" min="0" max="40" step="1" inputmode="decimal"></label>
+            <label>Çizgi (pt)<input type="number" data-key="h_lw" min="0.1" max="3" step="0.1" inputmode="decimal"></label>
+            <label>Renk<select data-key="h_color" id="h_color"></select></label>
+          </div>
+          <label class="full">Sayfa yazısı<input type="text" data-key="h_text" placeholder="Boş bırakılırsa yazı eklenmez"></label>
+          <div class="grid2">
+            <div><span class="lbl">Yazı konumu</span>
+              <div class="seg small" data-key="h_text_pos"><button data-v="Üst">Üst</button><button data-v="Alt">Alt</button></div>
+            </div>
+            <label>Yazı boyutu (pt)<input type="number" data-key="h_text_size" min="6" max="30" step="1" inputmode="decimal"></label>
+          </div>
+        </details>
+
+        <details class="card" open>
+          <summary>🔀 Yerleşim</summary>
+          <label class="switch"><input type="checkbox" data-key="d_first"><span></span>Başa da ek sayfa koy</label>
+          <div class="grid2">
+            <label>Her … sayfadan sonra<input type="number" data-key="d_every" min="0" max="100" step="1" inputmode="numeric"></label>
+            <label>… ek sayfa ekle<input type="number" data-key="d_per" min="1" max="20" step="1" inputmode="numeric"></label>
+          </div>
+          <p class="hint">Varsayılan: Ek, S1, Ek, S2, Ek … • "Her 0" → yalnızca başa ekler.</p>
+        </details>
+
+        <div class="card">
+          <h2>🔗 Ardından Kitapçık</h2>
+          <label class="switch"><input type="checkbox" data-key="d_chain"><span></span>Defteri kitapçığa da çevir</label>
+          <label class="switch"><input type="checkbox" data-key="d_keep"><span></span>Ara defter PDF'ini de kaydet</label>
+          <p class="hint">Kitapçık sekmesindeki kat çizgisi, kenar boşluğu ve kalibrasyon ayarları kullanılır (tüm sayfalar).</p>
+        </div>
+      </section>
+
+      <!-- ── Kitapçık sekmesi ─────────────────────────── -->
+      <section class="tab" id="tab-kitapcik">
+        <div class="card">
+          <h2>📄 Kaynak PDF Dosyaları</h2>
+          <div class="dropzone">
+            <label class="btn primary"><input type="file" accept="application/pdf,.pdf" multiple hidden data-pick="kitapcik">＋ PDF Seç</label>
+            <span class="muted">veya dosyaları buraya sürükleyin</span>
+          </div>
+          <ul class="filelist" data-list="kitapcik"></ul>
+        </div>
+
+        <div class="card">
+          <h2>🔢 Sayfa Aralığı <span class="badge" id="range_info">—</span></h2>
+          <label class="switch"><input type="checkbox" data-key="bk_all_pages" id="bk_all"><span></span>Tüm sayfalar</label>
+          <div class="row">
+            <input type="text" id="page_range" placeholder="1-12, 15, 20-24" disabled>
+            <button class="btn" id="range_all" disabled>Tümü</button>
+          </div>
+          <p class="hint">Örnek: 1-12, 15, 20-24 • 20- (20'den sona) • 9-3 (ters sıra). Aralık yalnızca tek dosya seçiliyken kullanılabilir.</p>
+        </div>
+
+        <details class="card" open>
+          <summary>✂ Kat / Kesim Çizgisi</summary>
+          <label class="switch"><input type="checkbox" data-key="bk_fold_on"><span></span>Orta kat çizgisi çiz</label>
+          <label class="switch"><input type="checkbox" data-key="bk_fold_dashed"><span></span>Kesikli (dashed)</label>
+          <span class="lbl">Renk</span>
+          <div class="seg small" data-key="bk_fold_color" id="foldSeg"></div>
+          <div class="grid2">
+            <label>Kalınlık (pt)<input type="number" data-key="bk_fold_w" min="0.3" max="3" step="0.1" inputmode="decimal"></label>
+            <label>Gutter (mm)<input type="number" data-key="bk_gutter" min="0" max="20" step="0.5" inputmode="decimal"></label>
+          </div>
+          <p class="hint">Gutter: kat çizgisinin her iki yanında bırakılan boşluk.</p>
+        </details>
+
+        <details class="card" open>
+          <summary>⊞ Kenar Boşlukları (mm)</summary>
+          <div class="grid4">
+            <label>İç (dikiş)<input type="number" data-key="bk_m_inner" min="0" max="30" step="0.5" inputmode="decimal"></label>
+            <label>Dış (kenar)<input type="number" data-key="bk_m_outer" min="0" max="30" step="0.5" inputmode="decimal"></label>
+            <label>Üst<input type="number" data-key="bk_m_top" min="0" max="30" step="0.5" inputmode="decimal"></label>
+            <label>Alt<input type="number" data-key="bk_m_bottom" min="0" max="30" step="0.5" inputmode="decimal"></label>
+          </div>
+        </details>
+
+        <details class="card" open>
+          <summary>⚙ Gelişmiş</summary>
+          <label class="switch"><input type="checkbox" data-key="bk_creep"><span></span>Creep düzeltmesi (kağıt kayması telafisi)</label>
+          <div class="grid2">
+            <label>Kağıt kalınlığı (mm)<input type="number" data-key="bk_thick" min="0.05" max="0.5" step="0.05" inputmode="decimal"></label>
+          </div>
+          <h3 class="warn">Yazıcı Kalibrasyonu <span class="muted">(çıktıyı ölçüp girin)</span></h3>
+          <div class="grid3">
+            <label>Toplam genişlik (cm)<input type="number" data-key="bk_cal_total" min="1" max="200" step="0.05" inputmode="decimal"></label>
+            <label>Ön — kat çizgisi (cm)<input type="number" data-key="bk_cal_front" min="0.1" max="200" step="0.05" inputmode="decimal"></label>
+            <label>Arka — kat çizgisi (cm)<input type="number" data-key="bk_cal_back" min="0.1" max="200" step="0.05" inputmode="decimal"></label>
+          </div>
+        </details>
+
+        <details class="card">
+          <summary>🖨 Yazıcı Profilleri</summary>
+          <p class="hint">Kat çizgisi, kenar boşluğu, creep ve kalibrasyon ayarlarını isimle saklayın (ör. "Ev yazıcısı").</p>
+          <div class="row">
+            <select id="profile"></select>
+            <button class="btn" id="prof_apply">Uygula</button>
+          </div>
+          <div class="row wrap">
+            <button class="btn" id="prof_save">💾 Kaydet</button>
+            <button class="btn" id="prof_del">🗑 Sil</button>
+            <button class="btn" id="prof_export">⤓ Dışa aktar</button>
+            <label class="btn"><input type="file" accept=".json,application/json" hidden id="prof_import">⤒ İçe aktar</label>
+          </div>
+          <p class="hint">İçe aktarma, masaüstü uygulamasının ayar dosyasını da kabul eder
+            (<code>%APPDATA%\PDF_Araclari\ayarlar.json</code>).</p>
+        </details>
+      </section>
+    </div>
+
+    <!-- ── Yan panel: önizleme, çıktılar, bilgi ──────── -->
+    <aside class="col-side">
+      <div class="card">
+        <h2>👁 Önizleme</h2>
+        <canvas id="pv" aria-label="Önizleme"></canvas>
+        <div class="row pv-nav">
+          <button class="btn" id="pv_prev" aria-label="Önceki">◀</button>
+          <button class="btn" id="pv_next" aria-label="Sonraki">▶</button>
+          <span class="muted grow" id="pv_label">Dosya ekleyin</span>
+          <button class="btn info" id="pv_refresh">⟳ Önizle</button>
+        </div>
+      </div>
+
+      <div class="card" id="results" hidden>
+        <h2>💾 Çıktılar <button class="btn small" id="res_clear">Temizle</button></h2>
+        <ul class="results"></ul>
+      </div>
+
+      <div class="card">
+        <h2>ℹ Bilgi</h2>
+        <pre id="log"></pre>
+      </div>
+    </aside>
+  </main>
+
+  <footer class="actionbar">
+    <button class="btn success big" id="run">▶ Defter Oluştur</button>
+    <div class="progress"><div id="pbar"></div></div>
+    <span id="status" class="muted">Hazır</span>
+  </footer>
+
+  <div id="toast" role="status" aria-live="polite"></div>
+  <div id="dropveil">PDF dosyalarını bırakın</div>
+</body>
+</html>
