@@ -1,5 +1,7 @@
 # PDF Araçları — Web + Android
 
+**Site: https://abkpdf.web.app**
+
 Masaüstü `pdf_araclari.py` uygulamasının tarayıcıda ve Android'de çalışan sürümü.
 Tüm PDF işlemleri cihazın içinde (JavaScript, pdf-lib) yapılır; dosyalar hiçbir sunucuya gönderilmez.
 
@@ -43,10 +45,19 @@ Aynı imza anahtarıyla imzalanan yeni APK, telefondaki uygulamanın üzerine (a
 
 ## Yayın
 
-Site `gh-pages` dalından yayınlanır: https://a-batuhan-kocyigit.github.io/pdf-araclari/
+Ana adres **https://abkpdf.web.app** (Firebase Hosting, proje: `abkpdf`).
+Yedek adres: https://a-batuhan-kocyigit.github.io/pdf-araclari/ (`gh-pages` dalı).
 
 Web'de bir değişiklik yaptıktan sonra önce `www/sw.js` içindeki `VERSION` değerini artırın
-(telefonlar yeni sürümü alsın), commit edin ve şu iki komutu çalıştırın:
+(telefonlar yeni sürümü alsın), sonra yayınlayın (PowerShell):
+
+```powershell
+$env:NODE_EXTRA_CA_CERTS="C:\ProgramData\Avast Software\Avast\wscert.pem"; npx firebase-tools deploy --only hosting
+```
+
+Not: Avast'ın HTTPS taraması yüzünden Node.js'e Avast sertifikası gösterilir.
+
+GitHub'a kaydetmek ve yedek adresi güncellemek için:
 
 ```bash
 git push origin main

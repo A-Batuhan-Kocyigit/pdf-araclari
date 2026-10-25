@@ -1,0 +1,21 @@
+{
+  "hosting": {
+    "site": "abkpdf",
+    "public": "www",
+    "ignore": ["firebase.json", "**/.*", "js/package.json"],
+    "headers": [
+      {
+        "source": "**/*.@(mjs|js|css)",
+        "headers": [{ "key": "Cache-Control", "value": "max-age=3600" }]
+      },
+      {
+        "source": "sw.js",
+        "headers": [{ "key": "Cache-Control", "value": "no-cache" }]
+      },
+      {
+        "source": "manifest.webmanifest",
+        "headers": [{ "key": "Content-Type", "value": "application/manifest+json" }]
+      }
+    ]
+  }
+}
