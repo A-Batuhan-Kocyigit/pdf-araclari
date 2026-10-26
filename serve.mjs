@@ -10,7 +10,7 @@ const TYPES = {
   ".html": "text/html; charset=utf-8", ".js": "text/javascript", ".mjs": "text/javascript",
   ".css": "text/css", ".json": "application/json", ".webmanifest": "application/manifest+json",
   ".png": "image/png", ".svg": "image/svg+xml", ".ttf": "font/ttf", ".pdf": "application/pdf",
-  ".txt": "text/plain; charset=utf-8",
+  ".txt": "text/plain; charset=utf-8", ".wasm": "application/wasm",
 };
 
 http.createServer((req, res) => {
