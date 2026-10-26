@@ -268,27 +268,35 @@ export const FOLD_COLORS = {
   "Siyah": [0.00, 0.00, 0.00],
 };
 
-/** Kaynak PDF'in medyan sayfa boyutunu ve yönünü tespit eder. */
-export function detectSourceInfo(doc, pages = null) {
+/**
+ * Kaynak PDF'in medyan sayfa boyutunu ve yönünü tespit eder.
+ * rotateLandscape açıksa yatay sayfalar döndürülecek sayılır ve
+ * yuva boyutu (w, h) dikey olarak hesaplanır.
+ */
+export function detectSourceInfo(doc, pages = null, rotateLandscape = false) {
   const idxs = pages && pages.length ? pages : [...Array(doc.getPageCount()).keys()];
   const ws = [], hs = [];
   for (const i of idxs.slice(0, 10)) {
     const b = pageBox(doc.getPage(i));
     ws.push(b.w); hs.push(b.h);
   }
-  ws.sort((a, b) => a - b); hs.sort((a, b) => a - b);
-  const w = ws[Math.floor(ws.length / 2)];
-  const h = hs[Math.floor(hs.length / 2)];
-  const isPortrait = h >= w;
+  const med = (v) => [...v].sort((a, b) => a - b)[Math.floor(v.length / 2)];
+  const rw = med(ws), rh = med(hs);                 // kaynağın gerçek yönü
+  const w = rotateLandscape ? med(ws.map((a, k) => Math.min(a, hs[k]))) : rw;
+  const h = rotateLandscape ? med(ws.map((a, k) => Math.max(a, hs[k]))) : rh;
+  const isPortrait = rh >= rw;
+  let landscape = 0;
+  for (const i of idxs) { const b = pageBox(doc.getPage(i)); if (b.w > b.h) landscape++; }
   return {
-    w, h, isPortrait,
-    label: `${isPortrait ? "Dikey" : "Yatay"} (${(w / MM).toFixed(0)}×${(h / MM).toFixed(0)} mm)`,
+    w, h, isPortrait, landscape,
+    label: `${isPortrait ? "Dikey" : "Yatay"} (${(rw / MM).toFixed(0)}×${(rh / MM).toFixed(0)} mm)`,
   };
 }
 
 export async function pdfInfo(bytes) {
   const doc = await PDFDocument.load(bytes, { ignoreEncryption: true });
-  return { pageCount: doc.getPageCount(), ...detectSourceInfo(doc) };
+  const slot = detectSourceInfo(doc, null, true);
+  return { pageCount: doc.getPageCount(), ...detectSourceInfo(doc), slotW: slot.w, slotH: slot.h };
 }
 
 export async function makeBooklet(srcBytes, {
@@ -306,6 +314,8 @@ export async function makeBooklet(srcBytes, {
   applyCreep = false,
   paperThick = 0.10,
   pageRange = "",                       // "" = tüm sayfalar, örn. "1-12, 15, 20-24"
+  rotateLandscape = true,               // yatay sayfaları dikey yuvaya döndürerek yerleştir
+  rotateLeft = true,                    // true: saat yönünün tersine (sola), false: sağa
   maxFaces = null,                      // önizleme için yalnızca ilk N yüz
   progress = null,
 } = {}) {
@@ -321,8 +331,9 @@ export async function makeBooklet(srcBytes, {
   const sheets = pairs.length / 2;
   if (maxFaces != null) pairs = pairs.slice(0, maxFaces);
 
-  const info = detectSourceInfo(src, sel);
+  const info = detectSourceInfo(src, sel, rotateLandscape);
   const SW = info.w, SH = info.h;
+  let rotated = 0;
 
   const mi = marginInner * MM, mo = marginOuter * MM;
   const mt = marginTop * MM, mb = marginBottom * MM;
@@ -368,6 +379,12 @@ export async function makeBooklet(srcBytes, {
       // si → seçim listesindeki sıra; orig'i aşanlar eklenen boş sayfalar
       if (si == null || si >= orig) continue;
       const { emb, box } = embedded.get(sel[si]);
+      // Yatay sayfa dikey yuvaya 90° döndürülerek girer → yuvayı doldurur.
+      // drawRotated saat yönünde döndürme bekler: sola 90° = sağa 270°.
+      const turn = rotateLandscape && box.w > box.h;
+      const vw = turn ? box.h : box.w, vh = turn ? box.w : box.h;
+      const rot = turn ? (box.rot + (rotateLeft ? 270 : 90)) % 360 : box.rot;
+      if (turn) rotated++;
 
       // Slot sınırları — gutter kat çizgisi yanında boşluk bırakır
       let x0, x1;
@@ -376,10 +393,10 @@ export async function makeBooklet(srcBytes, {
       const y0 = mb, y1 = PH - mt;       // pdf-lib: alttan yukarı
 
       // Best-fit ölçekleme (kırpma yok), slot içinde merkeze al
-      const scale = Math.min((x1 - x0) / box.w, (y1 - y0) / box.h);
-      const sw = box.w * scale, sh = box.h * scale;
+      const scale = Math.min((x1 - x0) / vw, (y1 - y0) / vh);
+      const sw = vw * scale, sh = vh * scale;
       const cx = (x0 + x1) / 2, cy = (y0 + y1) / 2;
-      drawRotated(pg, emb, box.rot, cx - sw / 2, cy - sh / 2, sw, sh);
+      drawRotated(pg, emb, rot, cx - sw / 2, cy - sh / 2, sw, sh);
     }
 
     // ── Kat / kılavuz çizgisi ──
@@ -409,6 +426,8 @@ export async function makeBooklet(srcBytes, {
       firstLast: sel.length ? [sel[0] + 1, sel[sel.length - 1] + 1] : [0, 0],
       srcW: SW, srcH: SH, outW: PW, outH: PH,
       orient: info.isPortrait ? "Dikey" : "Yatay",
+      srcLabel: info.label,             // kaynağın gerçek yönü ve boyutu
+      rotated,
       faces: pairs.length,
     },
   };
