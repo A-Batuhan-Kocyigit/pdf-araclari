@@ -40,6 +40,10 @@ Not: Kullanıcı klasörü adında Türkçe karakter olduğu için Java'ya ASCII
 `Windows-ROOT` ise Java'nın Windows'un güvenilir sertifikalarını kullanmasını sağlar.
 Çıktı: `android/app/build/outputs/apk/release/app-release.apk`
 
+Derleme `AccessDeniedException` / `Unable to delete directory` ile durursa (Avast yeni dosyaları
+tararken kısa süre kilitliyor) `android/app/build` klasörünü silip yeniden derleyin;
+`npx cap copy android` EPERM verirse `android/app/src/main/assets/public` klasörünü silin.
+
 Güncelleme yaparken `android/app/build.gradle` içindeki `versionCode` değerini bir artırın.
 Aynı imza anahtarıyla imzalanan yeni APK, telefondaki uygulamanın üzerine (ayarlar silinmeden) kurulur.
 
