@@ -31,6 +31,7 @@ const DEFAULTS = {
   bk_fold_w: "0.6", bk_gutter: "4",
   bk_m_inner: "2", bk_m_outer: "2", bk_m_top: "0", bk_m_bottom: "0",
   bk_creep: false, bk_thick: "0.10",
+  bk_rotate_land: true, bk_rot_dir: "Sola",
   bk_cal_total: "29.60", bk_cal_front: "14.80", bk_cal_back: "15.10",
   active_tab: "0", theme: "darkly",
 };
@@ -175,9 +176,12 @@ function onFilesChanged(tab) {
       const f = l[0], n = f.info.pageCount;
       $("#page_range").value = `1-${n}`;
       const pad = (4 - (n % 4)) % 4, total = n + pad, sheets = total / 4;
+      const rot = S.bk_rotate_land;
+      const sw = rot ? f.info.slotW : f.info.w, sh = rot ? f.info.slotH : f.info.h;
       log(`Yüklendi: ${f.name}\n  ${f.info.label}\n  Sayfa     : ${n}\n  Boş ek    : ${pad}\n` +
-          `  Toplam    : ${total}\n  Yaprak    : ${sheets}\n  Çıktı yüz : ${sheets * 2}\n\n` +
-          `Çıktı kağıt tahmini:\n  ~${(f.info.w * 2 / core.MM).toFixed(0)} x ${(f.info.h / core.MM).toFixed(0)} mm`, true);
+          `  Toplam    : ${total}\n  Yaprak    : ${sheets}\n  Çıktı yüz : ${sheets * 2}\n` +
+          `  Yatay     : ${f.info.landscape} sayfa${f.info.landscape && rot ? " (döndürülecek)" : ""}\n\n` +
+          `Çıktı kağıt tahmini:\n  ~${(sw * 2 / core.MM).toFixed(0)} x ${(sh / core.MM).toFixed(0)} mm`, true);
       setStatus(`${n} sayfa | ${f.info.isPortrait ? "Dikey" : "Yatay"}`);
     } else if (l.length > 1) {
       log(`${l.length} dosya seçildi.\nHer biri ayrı kitapçığa dönüştürülecek (tüm sayfalar).`, true);
@@ -248,6 +252,8 @@ function bookletOpts() {
     backFoldRatio: num(S.bk_cal_back, 15.1) / total,
     applyCreep: S.bk_creep,
     paperThick: num(S.bk_thick, 0.1),
+    rotateLandscape: S.bk_rotate_land,
+    rotateLeft: S.bk_rot_dir !== "Sağa",
   };
 }
 
@@ -490,9 +496,10 @@ async function run() {
         });
         addResult(`${stem0}_kitapçık.pdf`, r.bytes); made++;
         const I = r.info;
-        log(`✔ ${f.name}\n  ${I.orient} ${(I.srcW / core.MM).toFixed(0)}×${(I.srcH / core.MM).toFixed(0)} mm → ` +
+        log(`✔ ${f.name}\n  ${I.srcLabel} → ` +
             `${(I.outW / core.MM).toFixed(0)}×${(I.outH / core.MM).toFixed(0)} mm\n` +
-            `  Seçilen ${I.picked}/${I.srcPages} • ${I.sheets} yaprak • +${I.blank} boş`);
+            `  Seçilen ${I.picked}/${I.srcPages} • ${I.sheets} yaprak • +${I.blank} boş` +
+            (I.rotated ? `\n  ↻ ${I.rotated} yatay sayfa döndürüldü` : ""));
       }
       ok++;
     } catch (e) {

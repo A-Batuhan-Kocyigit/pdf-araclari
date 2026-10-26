@@ -1,5 +1,5 @@
 // PDF Araçları — service worker: internetsiz çalışma + paylaşım hedefi
-const VERSION = "v1";
+const VERSION = "v2";
 const CACHE = `pdf-araclari-${VERSION}`;
 const ASSETS = [
   "./",
