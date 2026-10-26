@@ -1,5 +1,5 @@
 // PDF Araçları — service worker: internetsiz çalışma + paylaşım hedefi
-const VERSION = "v2";
+const VERSION = "v3";
 const CACHE = `pdf-araclari-${VERSION}`;
 const ASSETS = [
   "./",
@@ -13,6 +13,8 @@ const ASSETS = [
   "vendor/fontkit.umd.min.js",
   "vendor/pdf.min.mjs",
   "vendor/pdf.worker.min.mjs",
+  "vendor/qpdf.js",
+  "vendor/qpdf.wasm",
   "fonts/DejaVuSans-Bold.ttf",
   "icons/icon-192.png",
   "icons/icon-512.png",

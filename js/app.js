@@ -147,11 +147,14 @@ async function addFiles(tab, items) {
     const name = f.name || `belge_${lists[tab].length + 1}.pdf`;
     if (lists[tab].some((x) => x.name === name && x.bytes.byteLength === f.bytes.byteLength)) continue;
     try {
-      const info = await core.pdfInfo(f.bytes);
-      lists[tab].push({ name, bytes: f.bytes, info });
+      const { bytes, fixed } = await core.preparePdf(f.bytes);
+      const info = await core.pdfInfo(bytes);
+      lists[tab].push({ name, bytes, info });
       added++;
+      if (fixed === "şifre") toast(`🔓 ${name}: düzenleme kısıtlaması kaldırıldı`, "success");
+      else if (fixed) toast(`🛠 ${name}: bozuk yapı onarıldı`, "success");
     } catch (e) {
-      toast(`${name}: okunamadı (${e.message})`, "danger");
+      toast(/^(Şifreli|PDF onarılamadı)/.test(e.message) ? `${name}: ${e.message}` : `${name}: okunamadı (${e.message})`, "danger");
     }
   }
   if (added) { renderList(tab); onFilesChanged(tab); }
@@ -680,8 +683,9 @@ function init() {
     e.target.value = "";
     if (!file) return;
     const f = await readFile(file);
-    try { await core.pdfInfo(f.bytes); } catch (err) { toast(`Okunamadı: ${err.message}`, "danger"); return; }
-    customHelper = { name: f.name, bytes: f.bytes };
+    let bytes;
+    try { ({ bytes } = await core.preparePdf(f.bytes)); } catch (err) { toast(`Okunamadı: ${err.message}`, "danger"); return; }
+    customHelper = { name: f.name, bytes };
     $("#h_file_name").textContent = f.name;
     storeHelper();
     schedulePreview();

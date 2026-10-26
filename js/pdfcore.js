@@ -19,6 +19,67 @@ async function loadFontBytes() {
   return fontBytesCache;
 }
 
+// ── Şifreli / bozuk PDF hazırlığı (qpdf, WebAssembly) ────────
+// pdf-lib şifre çözemez: AES şifreli PDF'leri hiç açamaz, RC4 şifrelileri
+// açar ama içerik şifreli kalır. Bu durumlarda (ve bozuk dosyalarda) qpdf
+// ile şifresiz, onarılmış bir kopya çıkarılır. Normal PDF'lere dokunulmaz.
+
+let qpdfFactory = null;
+
+async function loadQpdf() {
+  if (window.qpdfModule) return window.qpdfModule;   // önceden yüklenmiş (ör. testler)
+  if (!qpdfFactory) {
+    await new Promise((resolve, reject) => {
+      const s = document.createElement("script");
+      s.src = new URL("../vendor/qpdf.js", import.meta.url).href;
+      s.onload = resolve;
+      s.onerror = () => reject(new Error("qpdf yüklenemedi"));
+      document.head.append(s);
+    });
+    qpdfFactory = window.Module;                     // Emscripten fabrikası
+  }
+  return qpdfFactory;
+}
+
+/**
+ * PDF'i pdf-lib'in güvenle işleyebileceği hale getirir.
+ * Dönüş: { bytes, fixed }  —  fixed: null | "şifre" | "onarım"
+ */
+export async function preparePdf(bytes) {
+  let encrypted = false;
+  try {
+    const doc = await PDFDocument.load(bytes, { ignoreEncryption: true });
+    doc.getPages();                                  // sayfa ağacı okunabiliyor mu?
+    if (!doc.isEncrypted) return { bytes, fixed: null };
+    encrypted = true;
+  } catch {
+    // aşağıda qpdf ile onarılır
+  }
+
+  const factory = await loadQpdf();
+  const q = await factory({
+    locateFile: () => window.qpdfWasmUrl || new URL("../vendor/qpdf.wasm", import.meta.url).href,
+    print: () => {},
+    printErr: () => {},
+  });
+  q.FS.writeFile("/in.pdf", new Uint8Array(bytes));
+  // Çıkış kodu 3 = uyarılarla başarılı (bozuk dosya onarıldı)
+  const code = q.callMain(["--decrypt", "/in.pdf", "/out.pdf"]);
+  if (code !== 0 && code !== 3) {
+    throw new Error(encrypted ? "Şifreli PDF açılamadı (açılış parolası gerekiyor olabilir)" : "PDF onarılamadı");
+  }
+  const out = q.FS.readFile("/out.pdf");
+  const doc = await PDFDocument.load(out);
+  if (doc.isEncrypted) throw new Error("Şifreli PDF açılamadı (açılış parolası gerekiyor olabilir)");
+  doc.getPages();
+  // pdf-lib açamadıysa şifreli olup olmadığını /Encrypt sözlüğünden anla
+  if (!encrypted) encrypted = new TextDecoder("latin1").decode(new Uint8Array(bytes)).includes("/Encrypt");
+  return {
+    bytes: out.buffer.slice(out.byteOffset, out.byteOffset + out.byteLength),
+    fixed: encrypted ? "şifre" : "onarım",
+  };
+}
+
 // Sayfanın görünen kutusu (CropBox) ve döndürme bilgisi
 function pageBox(page) {
   const cb = page.getCropBox();
